@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Caro Online Pro - Gemini Edition</title>
+    <title>Caro Online - Huy Caro</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -83,17 +83,17 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.2);
         }
 
-        /* SỬA LỖI Ô BỊ MÉO THÀNH HÌNH CHỮ NHẬT */
+        /* Bàn cờ vuông vắn */
         #board {
             display: grid;
             grid-template-columns: repeat(15, 1fr);
-            grid-template-rows: repeat(15, 1fr); /* Ép cố định 15 dòng */
+            grid-template-rows: repeat(15, 1fr);
             gap: 1px;
             background-color: var(--grid-color);
             border: 2px solid var(--grid-color);
             border-radius: 5px;
             overflow: hidden;
-            aspect-ratio: 1/1; /* Bắt buộc khung phải vuông */
+            aspect-ratio: 1/1;
             margin: 0 auto;
             max-width: 100%;
         }
@@ -103,8 +103,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            /* Chữ tự co giãn theo màn hình */
-            font-size: clamp(12px, 3.5vw, 22px); 
+            font-size: clamp(10px, 3.5vw, 22px); 
             font-weight: bold;
             cursor: pointer;
             width: 100%;
@@ -112,20 +111,18 @@
             overflow: hidden;
         }
         
-        /* Hiệu ứng di chuột */
         .cell:not(.x):not(.o):hover { background-color: #222240; }
-
         .cell.x { color: var(--x-color); text-shadow: 0 0 5px rgba(233, 69, 96, 0.5); }
         .cell.o { color: var(--o-color); text-shadow: 0 0 5px rgba(79, 172, 254, 0.5); }
         
         footer {
             margin-top: 20px;
-            padding: 10px;
+            padding: 15px;
             text-align: center;
-            font-size: 0.8em;
-            opacity: 0.8;
+            font-size: 0.85em;
             width: 100%;
             background: #11111f;
+            border-top: 1px solid #333;
         }
         
         .donate-highlight {
@@ -154,7 +151,7 @@
                 <input type="number" id="room-input" placeholder="Nhập ID 5 số" style="margin: 8px 0;">
                 <button class="btn-secondary" onclick="joinRoom()" style="width: 80px;">Vào</button>
             </div>
-            <button class="btn-ai" onclick="startAI()">Đấu với Gemini AI (Siêu Khó)</button>
+            <button class="btn-ai" onclick="startAI()">Đấu với Gemini AI (Cực Nhanh)</button>
         </div>
 
         <div id="screen-game" class="screen">
@@ -180,46 +177,42 @@
 
     <script>
         // ==========================================
-        // 1. CẤU HÌNH API KEY (ĐÃ ĐIỀN)
+        // 1. CẤU HÌNH API KEY GEMINI (CỦA BẠN)
         // ==========================================
-        
-        // MÃ API GEMINI CỦA BẠN
-        const GEMINI_API_KEY = "AIzaSyClCEHWwfnUlUVwCfgmCDEE0ryrRxb5Luk";
+        const GEMINI_API_KEY = "AIzaSyA2vDGvNKQ5W_0lezArxm0QWoaBi8CpLV0";
 
-        // MÃ FIREBASE (BẠN HÃY DÁN ĐOẠN FIREBASE CỦA BẠN VÀO DƯỚI ĐÂY)
-        // -----------------------------------------------------------
+        // ==========================================
+        // 2. CẤU HÌNH FIREBASE (CỦA BẠN - HUY CARO)
+        // ==========================================
         const firebaseConfig = {
-            // !!! DÁN NỘI DUNG TRONG DẤU NGOẶC { } CỦA BẠN VÀO ĐÂY !!!
-            // Ví dụ:
-            // apiKey: "AIzaSyDX5zqilc7zamn_XVFcIF_en-prH0VlV3k",
-            // authDomain: "huy-caro.firebaseapp.com",
-            // databaseURL: "https://huy-caro-default-rtdb.firebaseio.com",
-            // projectId: "huy-caro",
-            // storageBucket: "huy-caro.firebasestorage.app",
-            // messagingSenderId: "711387990292",
-            // appId: "1:711387990292:web:50d18472a522d7e0441a01",
-            // measurementId: "G-FN7N57N8R8"
+            apiKey: "AIzaSyDX5zqilc7zamn_XVFcIF_en-prH0VlV3k",
+            authDomain: "huy-caro.firebaseapp.com",
+            databaseURL: "https://huy-caro-default-rtdb.firebaseio.com",
+            projectId: "huy-caro",
+            storageBucket: "huy-caro.firebasestorage.app",
+            messagingSenderId: "711387990292",
+            appId: "1:711387990292:web:50d18472a522d7e0441a01",
+            measurementId: "G-FN7N57N8R8"
         };
-        // -----------------------------------------------------------
-
+        
         // Khởi tạo Firebase
         if (!firebase.apps.length) {
             try {
                 firebase.initializeApp(firebaseConfig);
             } catch (e) {
-                console.error("Chưa cấu hình Firebase đúng cách!");
+                console.error("Lỗi cấu hình Firebase:", e);
+                alert("Lỗi cấu hình Firebase! Kiểm tra Console.");
             }
         }
         let db = null;
         try { db = firebase.database(); } catch(e) {}
 
-        // Biến toàn cục
+        // --- BIẾN TOÀN CỤC ---
         let myName = "";
         let currentRoomId = null;
         let mySymbol = ""; 
         let isAiMode = false;
-        let boardState = Array(225).fill(null); // Mảng rỗng thay vì ""
-        for(let i=0; i<225; i++) boardState[i] = ""; // Reset về chuỗi rỗng
+        let boardState = Array(225).fill(""); 
         let isMyTurn = false;
 
         // --- ĐIỀU HƯỚNG ---
@@ -271,7 +264,7 @@
             });
         }
 
-        // --- LOGIC XỬ LÝ NƯỚC ĐI (QUAN TRỌNG) ---
+        // --- XỬ LÝ NƯỚC ĐI ---
         async function handleCellClick(index) {
             if (!isMyTurn || boardState[index] !== "") return;
 
@@ -282,15 +275,12 @@
             // Check thắng ngay
             if (checkWinLocal(boardState, mySymbol)) {
                 if(isAiMode) alert("BẠN ĐÃ THẮNG GEMINI! 🏆");
-                else {
-                    // Cập nhật lên Firebase nếu thắng online
-                    db.ref('rooms/' + currentRoomId).update({ board: boardState, winner: mySymbol });
-                }
+                else db.ref('rooms/' + currentRoomId).update({ board: boardState, winner: mySymbol });
                 isMyTurn = false;
                 return;
             }
 
-            // 2. CHẾ ĐỘ AI (GEMINI PRO)
+            // 2. CHẾ ĐỘ AI (GEMINI)
             if (isAiMode) {
                 isMyTurn = false;
                 document.getElementById('status-display').innerText = "Gemini đang tính toán...";
@@ -304,15 +294,16 @@
                     
                     if (checkWinLocal(boardState, 'O')) {
                         document.getElementById('status-display').innerText = "Gemini thắng! 🤖";
-                        setTimeout(() => alert("Gemini đã thắng! Bạn cần cố gắng hơn."), 100);
+                        setTimeout(() => alert("Gemini đã thắng! Bạn cần luyện tập thêm."), 100);
                     } else {
                         isMyTurn = true;
                         document.getElementById('status-display').innerText = "Đến lượt bạn (X)";
                     }
                 } else {
-                    // AI lỗi hoặc không tìm ra nước đi
-                    alert("AI bị lỗi kết nối, bạn hãy đánh tiếp!");
+                    // Nếu lỗi thì thông báo nhẹ, nhưng cho người chơi đánh tiếp
+                    alert("AI không phản hồi, bạn hãy đánh tiếp!");
                     isMyTurn = true;
+                    document.getElementById('status-display').innerText = "Đến lượt bạn (X)";
                 }
                 return;
             }
@@ -321,7 +312,6 @@
             if (db) {
                 const nextTurn = mySymbol === 'X' ? 'O' : 'X';
                 let winner = null;
-                // Check hòa
                 if (!boardState.includes("")) winner = "DRAW";
 
                 db.ref('rooms/' + currentRoomId).update({
@@ -332,47 +322,56 @@
             }
         }
 
-        // --- GEMINI AI PRO LOGIC ---
+        // --- AI LOGIC (SỬ DỤNG FLASH ĐỂ TRÁNH LỖI 404) ---
         async function getGeminiMoveFromAPI() {
-            // Map bàn cờ: 0=Trống, 1=Người(X), 2=AI(O)
+            // Map bàn cờ: 0=Trống, 1=X (Người), 2=O (AI)
             const mapBoard = boardState.map(c => c === 'X' ? 1 : (c === 'O' ? 2 : 0));
             
             const prompt = `
                 Bạn là Đại Kiện Tướng Caro (Gomoku). Bạn cầm quân O (số 2). Đối thủ X (số 1).
-                Bàn cờ 15x15 (mảng 225 phần tử): ${JSON.stringify(mapBoard)}
+                Bàn cờ 15x15: ${JSON.stringify(mapBoard)}
                 
                 CHIẾN THUẬT:
-                1. TẤN CÔNG: Nếu bạn có 4 con thắng -> Đánh ngay.
-                2. PHÒNG THỦ TUYỆT ĐỐI: Nếu đối thủ (1) có 3 con hở hoặc 4 con -> CHẶN NGAY.
-                3. PHÁT TRIỂN: Nếu an toàn, tạo nước cờ đôi hoặc nước 3 hở.
-                
-                Yêu cầu: Trả về DUY NHẤT số Index (0-224) của nước đi. Không giải thích.
+                1. ƯU TIÊN TUYỆT ĐỐI: Nếu đối thủ (1) có 3 con hở hoặc 4 con -> CHẶN NGAY LẬP TỨC.
+                2. TẤN CÔNG: Nếu bạn có cơ hội thắng (4 con) -> Đánh ngay để thắng.
+                3. Chỉ trả về DUY NHẤT số Index (0-224) của nước đi.
             `;
 
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${GEMINI_API_KEY}`;
+            // Dùng model 'gemini-1.5-flash' để đảm bảo không bị lỗi 404
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
             
             try {
                 const response = await fetch(url, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        contents: [{ parts: [{ text: prompt }] }],
-                        generationConfig: { temperature: 0.2 } // Giảm độ ngẫu nhiên để đánh chắc tay
+                        contents: [{ parts: [{ text: prompt }] }]
                     })
                 });
+
+                if (!response.ok) {
+                    console.error("Lỗi API:", response.statusText);
+                    return -1;
+                }
+
                 const data = await response.json();
-                const text = data.candidates[0].content.parts[0].text;
-                const move = parseInt(text.match(/\d+/)[0]);
-                return (boardState[move] === "") ? move : -1;
+                if(data.candidates && data.candidates.length > 0) {
+                    const text = data.candidates[0].content.parts[0].text;
+                    // Lấy số đầu tiên tìm thấy
+                    const move = parseInt(text.match(/\d+/)[0]);
+                    return (boardState[move] === "") ? move : -1;
+                }
+                return -1;
+
             } catch (e) {
-                console.error("AI Error:", e);
-                return -1; // Fallback
+                console.error("Lỗi hệ thống:", e);
+                return -1; 
             }
         }
 
         // --- ONLINE LOGIC ---
         function createRoom() {
-            if(!db) return alert("Lỗi kết nối Server Firebase!");
+            if(!db) return alert("Chưa kết nối Firebase! Kiểm tra file code.");
             currentRoomId = Math.floor(10000 + Math.random() * 90000).toString();
             mySymbol = 'X';
             
@@ -388,7 +387,7 @@
         }
 
         function joinRoom() {
-            if(!db) return alert("Lỗi kết nối Server Firebase!");
+            if(!db) return alert("Chưa kết nối Firebase!");
             const inputId = document.getElementById('room-input').value.trim();
             if (inputId.length !== 5) return alert("ID phòng phải có 5 số!");
             
@@ -449,8 +448,8 @@
             boardState = Array(225).fill("");
             initBoard();
             showScreen('screen-game');
-            document.getElementById('room-id-display').innerText = "Chế độ: Đấu với AI Pro";
-            document.getElementById('opp-name').innerText = "Gemini 1.5 Pro";
+            document.getElementById('room-id-display').innerText = "Chế độ: Đấu với AI";
+            document.getElementById('opp-name').innerText = "Gemini AI";
             document.getElementById('my-symbol').innerText = "X";
             document.getElementById('status-display').innerText = "Lượt của bạn (X)";
             isMyTurn = true;
@@ -462,7 +461,6 @@
                 for (let j = 0; j < size; j++) {
                     const idx = i * size + j;
                     if (board[idx] !== player) continue;
-                    // Ngang, Dọc, Chéo Huyền, Chéo Sắc
                     if (j+4<size && board[idx+1]===player && board[idx+2]===player && board[idx+3]===player && board[idx+4]===player) return true;
                     if (i+4<size && board[idx+size]===player && board[idx+2*size]===player && board[idx+3*size]===player && board[idx+4*size]===player) return true;
                     if (i+4<size && j+4<size && board[idx+size+1]===player && board[idx+2*size+2]===player && board[idx+3*size+3]===player && board[idx+4*size+4]===player) return true;
