@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Caro Online Pro - Gemini Edition</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #1a1a2e;
+            --container-bg: #16213e;
+            --accent-color: #e94560;
+            --text-color: #ffffff;
+            --grid-color: #30475e;
+            --x-color: #e94560;
+            --o-color: #4facfe;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 450px;
+            padding: 15px;
+            text-align: center;
+            margin: auto;
+        }
+
+        h1 { margin-bottom: 15px; font-weight: 600; color: var(--o-color); }
+        
+        .screen { display: none; animation: fadeIn 0.3s; }
+        .screen.active { display: block; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        input, button {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 8px;
+            font-size: 15px;
+            outline: none;
+        }
+
+        input {
+            border: 2px solid var(--grid-color);
+            background: var(--container-bg);
+            color: white;
+            text-align: center;
+        }
+
+        button {
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        
+        button:active { transform: scale(0.98); }
+        .btn-primary { background: linear-gradient(45deg, #00f260, #0575e6); color: white; }
+        .btn-secondary { background: var(--grid-color); color: white; }
+        .btn-ai { background: linear-gradient(45deg, #ff9966, #ff5e62); color: white; }
+
+        .game-info {
+            background: var(--container-bg);
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        /* SỬA LỖI Ô BỊ MÉO THÀNH HÌNH CHỮ NHẬT */
+        #board {
+            display: grid;
+            grid-template-columns: repeat(15, 1fr);
+            grid-template-rows: repeat(15, 1fr); /* Ép cố định 15 dòng */
+            gap: 1px;
+            background-color: var(--grid-color);
+            border: 2px solid var(--grid-color);
+            border-radius: 5px;
+            overflow: hidden;
+            aspect-ratio: 1/1; /* Bắt buộc khung phải vuông */
+            margin: 0 auto;
+            max-width: 100%;
+        }
+
+        .cell {
+            background-color: var(--bg-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            /* Chữ tự co giãn theo màn hình */
+            font-size: clamp(12px, 3.5vw, 22px); 
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        /* Hiệu ứng di chuột */
+        .cell:not(.x):not(.o):hover { background-color: #222240; }
+
+        .cell.x { color: var(--x-color); text-shadow: 0 0 5px rgba(233, 69, 96, 0.5); }
+        .cell.o { color: var(--o-color); text-shadow: 0 0 5px rgba(79, 172, 254, 0.5); }
+        
+        footer {
+            margin-top: 20px;
+            padding: 10px;
+            text-align: center;
+            font-size: 0.8em;
+            opacity: 0.8;
+            width: 100%;
+            background: #11111f;
+        }
+        
+        .donate-highlight {
+            color: #00f260;
+            font-weight: bold;
+            display: block;
+            margin-top: 5px;
+            font-size: 1.2em;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div id="screen-login" class="screen active">
+            <h1>Caro Online</h1>
+            <input type="text" id="username" placeholder="Nhập tên của bạn (VD: Huy Pro)" maxlength="15">
+            <button class="btn-primary" onclick="goToMenu()">Bắt đầu</button>
+        </div>
+
+        <div id="screen-menu" class="screen">
+            <h2 id="welcome-msg" style="margin-bottom: 20px;">Xin chào!</h2>
+            <button class="btn-primary" onclick="createRoom()">Tạo Phòng (2 Người)</button>
+            <div style="display: flex; gap: 10px;">
+                <input type="number" id="room-input" placeholder="Nhập ID 5 số" style="margin: 8px 0;">
+                <button class="btn-secondary" onclick="joinRoom()" style="width: 80px;">Vào</button>
+            </div>
+            <button class="btn-ai" onclick="startAI()">Đấu với Gemini AI (Siêu Khó)</button>
+        </div>
+
+        <div id="screen-game" class="screen">
+            <div class="game-info">
+                <div style="background: #e94560; display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 12px; margin-bottom: 5px;" id="room-id-display">Room: ---</div>
+                <div id="status-display" style="font-weight: bold; font-size: 1.1em;">Đang đợi đối thủ...</div>
+                <div style="font-size: 12px; color: #888; margin-top: 5px;">
+                    Bạn: <span id="my-symbol">---</span> | Đối thủ: <span id="opp-name">---</span>
+                </div>
+            </div>
+            
+            <div id="board"></div>
+            
+            <button class="btn-secondary" onclick="resetGame()" style="margin-top: 15px; background: #333;">Thoát trận</button>
+        </div>
+    </div>
+
+    <footer>
+        <div>☕ Donate ủng hộ Dev</div>
+        <span class="donate-highlight">20088888866666</span>
+        <div class="bank-info">MBBank - Dang Quang Huy</div>
+    </footer>
+
+    <script>
+        // ==========================================
+        // 1. CẤU HÌNH API KEY (ĐÃ ĐIỀN)
+        // ==========================================
+        
+        // MÃ API GEMINI CỦA BẠN
+        const GEMINI_API_KEY = "AIzaSyClCEHWwfnUlUVwCfgmCDEE0ryrRxb5Luk";
+
+        // MÃ FIREBASE (BẠN HÃY DÁN ĐOẠN FIREBASE CỦA BẠN VÀO DƯỚI ĐÂY)
+        // -----------------------------------------------------------
+        const firebaseConfig = {
+            // !!! DÁN NỘI DUNG TRONG DẤU NGOẶC { } CỦA BẠN VÀO ĐÂY !!!
+            // Ví dụ:
+            // apiKey: "AIzaSyDX5zqilc7zamn_XVFcIF_en-prH0VlV3k",
+            // authDomain: "huy-caro.firebaseapp.com",
+            // databaseURL: "https://huy-caro-default-rtdb.firebaseio.com",
+            // projectId: "huy-caro",
+            // storageBucket: "huy-caro.firebasestorage.app",
+            // messagingSenderId: "711387990292",
+            // appId: "1:711387990292:web:50d18472a522d7e0441a01",
+            // measurementId: "G-FN7N57N8R8"
+        };
+        // -----------------------------------------------------------
+
+        // Khởi tạo Firebase
+        if (!firebase.apps.length) {
+            try {
+                firebase.initializeApp(firebaseConfig);
+            } catch (e) {
+                console.error("Chưa cấu hình Firebase đúng cách!");
+            }
+        }
+        let db = null;
+        try { db = firebase.database(); } catch(e) {}
+
+        // Biến toàn cục
+        let myName = "";
+        let currentRoomId = null;
+        let mySymbol = ""; 
+        let isAiMode = false;
+        let boardState = Array(225).fill(null); // Mảng rỗng thay vì ""
+        for(let i=0; i<225; i++) boardState[i] = ""; // Reset về chuỗi rỗng
+        let isMyTurn = false;
+
+        // --- ĐIỀU HƯỚNG ---
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        function goToMenu() {
+            const nameInput = document.getElementById('username').value.trim();
+            if (!nameInput) return alert("Vui lòng nhập tên!");
+            myName = nameInput;
+            document.getElementById('welcome-msg').innerText = `Xin chào, ${myName}!`;
+            showScreen('screen-menu');
+        }
+
+        function resetGame() {
+            if(currentRoomId && !isAiMode && db) db.ref('rooms/' + currentRoomId).off();
+            currentRoomId = null;
+            isAiMode = false;
+            showScreen('screen-menu');
+        }
+
+        // --- GAME UI ---
+        function initBoard() {
+            const boardEl = document.getElementById('board');
+            boardEl.innerHTML = "";
+            for (let i = 0; i < 225; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.onclick = () => handleCellClick(i);
+                boardEl.appendChild(cell);
+            }
+        }
+
+        function updateBoardUI(boardData) {
+            const cells = document.querySelectorAll('.cell');
+            boardData.forEach((val, idx) => {
+                cells[idx].className = 'cell'; 
+                if (val === 'X') {
+                    cells[idx].classList.add('x');
+                    cells[idx].innerText = 'X';
+                } else if (val === 'O') {
+                    cells[idx].classList.add('o');
+                    cells[idx].innerText = 'O';
+                } else {
+                    cells[idx].innerText = '';
+                }
+            });
+        }
+
+        // --- LOGIC XỬ LÝ NƯỚC ĐI (QUAN TRỌNG) ---
+        async function handleCellClick(index) {
+            if (!isMyTurn || boardState[index] !== "") return;
+
+            // 1. NGƯỜI CHƠI ĐÁNH
+            boardState[index] = mySymbol;
+            updateBoardUI(boardState);
+            
+            // Check thắng ngay
+            if (checkWinLocal(boardState, mySymbol)) {
+                if(isAiMode) alert("BẠN ĐÃ THẮNG GEMINI! 🏆");
+                else {
+                    // Cập nhật lên Firebase nếu thắng online
+                    db.ref('rooms/' + currentRoomId).update({ board: boardState, winner: mySymbol });
+                }
+                isMyTurn = false;
+                return;
+            }
+
+            // 2. CHẾ ĐỘ AI (GEMINI PRO)
+            if (isAiMode) {
+                isMyTurn = false;
+                document.getElementById('status-display').innerText = "Gemini đang tính toán...";
+                
+                // Gọi AI
+                const aiMove = await getGeminiMoveFromAPI();
+                
+                if (aiMove !== -1) {
+                    boardState[aiMove] = 'O';
+                    updateBoardUI(boardState);
+                    
+                    if (checkWinLocal(boardState, 'O')) {
+                        document.getElementById('status-display').innerText = "Gemini thắng! 🤖";
+                        setTimeout(() => alert("Gemini đã thắng! Bạn cần cố gắng hơn."), 100);
+                    } else {
+                        isMyTurn = true;
+                        document.getElementById('status-display').innerText = "Đến lượt bạn (X)";
+                    }
+                } else {
+                    // AI lỗi hoặc không tìm ra nước đi
+                    alert("AI bị lỗi kết nối, bạn hãy đánh tiếp!");
+                    isMyTurn = true;
+                }
+                return;
+            }
+
+            // 3. CHẾ ĐỘ ONLINE
+            if (db) {
+                const nextTurn = mySymbol === 'X' ? 'O' : 'X';
+                let winner = null;
+                // Check hòa
+                if (!boardState.includes("")) winner = "DRAW";
+
+                db.ref('rooms/' + currentRoomId).update({
+                    board: boardState,
+                    turn: nextTurn,
+                    winner: winner
+                });
+            }
+        }
+
+        // --- GEMINI AI PRO LOGIC ---
+        async function getGeminiMoveFromAPI() {
+            // Map bàn cờ: 0=Trống, 1=Người(X), 2=AI(O)
+            const mapBoard = boardState.map(c => c === 'X' ? 1 : (c === 'O' ? 2 : 0));
+            
+            const prompt = `
+                Bạn là Đại Kiện Tướng Caro (Gomoku). Bạn cầm quân O (số 2). Đối thủ X (số 1).
+                Bàn cờ 15x15 (mảng 225 phần tử): ${JSON.stringify(mapBoard)}
+                
+                CHIẾN THUẬT:
+                1. TẤN CÔNG: Nếu bạn có 4 con thắng -> Đánh ngay.
+                2. PHÒNG THỦ TUYỆT ĐỐI: Nếu đối thủ (1) có 3 con hở hoặc 4 con -> CHẶN NGAY.
+                3. PHÁT TRIỂN: Nếu an toàn, tạo nước cờ đôi hoặc nước 3 hở.
+                
+                Yêu cầu: Trả về DUY NHẤT số Index (0-224) của nước đi. Không giải thích.
+            `;
+
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${GEMINI_API_KEY}`;
+            
+            try {
+                const response = await fetch(url, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }],
+                        generationConfig: { temperature: 0.2 } // Giảm độ ngẫu nhiên để đánh chắc tay
+                    })
+                });
+                const data = await response.json();
+                const text = data.candidates[0].content.parts[0].text;
+                const move = parseInt(text.match(/\d+/)[0]);
+                return (boardState[move] === "") ? move : -1;
+            } catch (e) {
+                console.error("AI Error:", e);
+                return -1; // Fallback
+            }
+        }
+
+        // --- ONLINE LOGIC ---
+        function createRoom() {
+            if(!db) return alert("Lỗi kết nối Server Firebase!");
+            currentRoomId = Math.floor(10000 + Math.random() * 90000).toString();
+            mySymbol = 'X';
+            
+            db.ref('rooms/' + currentRoomId).set({
+                id: currentRoomId,
+                playerX: myName,
+                playerO: "Đang đợi...",
+                board: Array(225).fill(""),
+                turn: 'X',
+                winner: null
+            });
+            startGameOnline();
+        }
+
+        function joinRoom() {
+            if(!db) return alert("Lỗi kết nối Server Firebase!");
+            const inputId = document.getElementById('room-input').value.trim();
+            if (inputId.length !== 5) return alert("ID phòng phải có 5 số!");
+            
+            db.ref('rooms/' + inputId).once('value', snapshot => {
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    if (data.playerO !== "Đang đợi...") return alert("Phòng đã đầy!");
+                    currentRoomId = inputId;
+                    mySymbol = 'O';
+                    db.ref('rooms/' + currentRoomId).update({ playerO: myName });
+                    startGameOnline();
+                } else {
+                    alert("Phòng không tồn tại!");
+                }
+            });
+        }
+
+        function startGameOnline() {
+            initBoard();
+            showScreen('screen-game');
+            document.getElementById('room-id-display').innerText = "Phòng: " + currentRoomId;
+            document.getElementById('my-symbol').innerText = mySymbol;
+
+            db.ref('rooms/' + currentRoomId).on('value', snapshot => {
+                const data = snapshot.val();
+                if (!data) return;
+                boardState = data.board || Array(225).fill("");
+                updateBoardUI(boardState);
+
+                const oppName = mySymbol === 'X' ? data.playerO : data.playerX;
+                document.getElementById('opp-name').innerText = oppName;
+
+                if (data.winner) {
+                    document.getElementById('status-display').innerText = 
+                        data.winner === 'DRAW' ? "Hòa!" : (data.winner === mySymbol ? "BẠN THẮNG! 🎉" : "BẠN THUA 😢");
+                    isMyTurn = false;
+                    return;
+                }
+
+                if (data.turn === mySymbol) {
+                    if(data.playerO === "Đang đợi...") {
+                         document.getElementById('status-display').innerText = "Đang đợi người vào...";
+                         isMyTurn = false;
+                    } else {
+                        isMyTurn = true;
+                        document.getElementById('status-display').innerText = "Đến lượt bạn!";
+                    }
+                } else {
+                    isMyTurn = false;
+                    document.getElementById('status-display').innerText = "Đối thủ đang đánh...";
+                }
+            });
+        }
+
+        function startAI() {
+            isAiMode = true;
+            mySymbol = 'X';
+            boardState = Array(225).fill("");
+            initBoard();
+            showScreen('screen-game');
+            document.getElementById('room-id-display').innerText = "Chế độ: Đấu với AI Pro";
+            document.getElementById('opp-name').innerText = "Gemini 1.5 Pro";
+            document.getElementById('my-symbol').innerText = "X";
+            document.getElementById('status-display').innerText = "Lượt của bạn (X)";
+            isMyTurn = true;
+        }
+
+        function checkWinLocal(board, player) {
+            const size = 15;
+            for (let i = 0; i < size; i++) {
+                for (let j = 0; j < size; j++) {
+                    const idx = i * size + j;
+                    if (board[idx] !== player) continue;
+                    // Ngang, Dọc, Chéo Huyền, Chéo Sắc
+                    if (j+4<size && board[idx+1]===player && board[idx+2]===player && board[idx+3]===player && board[idx+4]===player) return true;
+                    if (i+4<size && board[idx+size]===player && board[idx+2*size]===player && board[idx+3*size]===player && board[idx+4*size]===player) return true;
+                    if (i+4<size && j+4<size && board[idx+size+1]===player && board[idx+2*size+2]===player && board[idx+3*size+3]===player && board[idx+4*size+4]===player) return true;
+                    if (i+4<size && j-4>=0 && board[idx+size-1]===player && board[idx+2*size-2]===player && board[idx+3*size-3]===player && board[idx+4*size-4]===player) return true;
+                }
+            }
+            return false;
+        }
+    </script>
+</body>
+</html>
