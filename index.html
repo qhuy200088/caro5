@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Caro Vua Trò Chơi - Huy Caro</title>
+    <title>Caro All-in-One - Huy Caro</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -16,11 +16,8 @@
             font-family: 'Poppins', sans-serif; 
             background: var(--bg); 
             color: var(--text); 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
             min-height: 100vh;
-            justify-content: center;
         }
 
         .container { width: 100%; max-width: 450px; padding: 15px; text-align: center; margin: auto; }
@@ -39,21 +36,14 @@
         .btn-main { background: linear-gradient(45deg, #00f260, #0575e6); color: white; }
         .btn-sub { background: var(--grid); color: white; }
         .btn-ai { background: linear-gradient(45deg, #ff00cc, #333399); color: white; box-shadow: 0 0 15px rgba(255, 0, 204, 0.4); }
-        .btn-restart { background: #f1c40f; color: #333; display: none; margin-top: 10px; }
+        .btn-offline { background: linear-gradient(45deg, #ff9966, #ff5e62); color: white; }
+        .btn-restart { background: #f1c40f; color: #333; display: none; margin-top: 10px; animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
         
         #board { 
-            display: grid; 
-            grid-template-columns: repeat(15, 1fr); 
-            grid-template-rows: repeat(15, 1fr); 
-            gap: 1px; 
-            background: var(--grid); 
-            border: 3px solid var(--grid); 
-            border-radius: 8px; 
-            overflow: hidden; 
-            aspect-ratio: 1/1; 
-            margin: 0 auto; 
-            box-shadow: 0 10px 20px rgba(0,0,0,0.3); 
-            max-width: 100%;
+            display: grid; grid-template-columns: repeat(15, 1fr); grid-template-rows: repeat(15, 1fr); 
+            gap: 1px; background: var(--grid); border: 3px solid var(--grid); border-radius: 8px; 
+            overflow: hidden; aspect-ratio: 1/1; margin: 0 auto; box-shadow: 0 10px 20px rgba(0,0,0,0.3); max-width: 100%;
         }
 
         .cell { 
@@ -74,34 +64,35 @@
 
     <div class="container">
         <div id="screen-login" class="screen active">
-            <h1>Caro Pro</h1>
-            <p style="color:#aaa; margin-bottom: 20px;">Chế độ Random Turn</p>
-            <input type="text" id="username" placeholder="Nhập tên đại hiệp" maxlength="15">
+            <h1>Caro Ultimate</h1>
+            <p style="color:#aaa; margin-bottom: 20px;">Vua Trò Chơi</p>
+            <input type="text" id="username" placeholder="Nhập tên của bạn" maxlength="15">
             <button class="btn-main" onclick="goToMenu()">BẮT ĐẦU</button>
         </div>
 
         <div id="screen-menu" class="screen">
             <h2 id="welcome-msg" style="color: #fff;">Xin chào!</h2>
             <br>
-            <button class="btn-main" onclick="createRoom()">⚔️ Tạo Phòng (PVP)</button>
+            <button class="btn-main" onclick="createRoom()">⚔️ Tạo Phòng (Online)</button>
             <div style="display: flex; gap: 10px;">
                 <input type="number" id="room-input" placeholder="ID Phòng">
                 <button class="btn-sub" onclick="joinRoom()" style="width: 80px;">Vào</button>
             </div>
             <hr style="border: 0; border-top: 1px solid #333; margin: 15px 0;">
-            <button class="btn-ai" onclick="startAI()">🎲 Đấu với Boss (Random)</button>
+            <button class="btn-offline" onclick="startOffline()">👥 Chơi Offline (2 Người)</button>
+            <button class="btn-ai" onclick="startAI()">🤖 Đấu với Boss (Random)</button>
         </div>
 
         <div id="screen-game" class="screen">
             <div class="game-status-box">
                 <div id="room-id-display" style="color: #bbb; font-size: 0.9em; text-transform: uppercase;">---</div>
                 <div id="status-display" style="font-size: 1.4em; font-weight: bold; margin: 8px 0; color: #fff;">---</div>
-                <div style="font-size: 0.8em; color: #888;">Bạn: <span id="my-symbol-display"></span></div>
+                <div style="font-size: 0.8em; color: #888;" id="sub-status"></div>
             </div>
             
             <div id="board"></div>
-            <button id="btn-restart" class="btn-restart" onclick="restartAiGame()">🔄 Chơi ván mới</button>
-            <button class="btn-sub" onclick="resetGame()" style="margin-top: 10px; background: #c0392b;">🏳️ Đầu hàng</button>
+            <button id="btn-restart" class="btn-restart" onclick="restartCurrentMode()">🔄 Chơi ván mới</button>
+            <button class="btn-sub" onclick="quitGame()" style="margin-top: 10px; background: #c0392b;">🏳️ Thoát ra Menu</button>
         </div>
     </div>
 
@@ -112,7 +103,7 @@
     </footer>
 
     <script>
-        // FIREBASE CONFIG (CỦA BẠN)
+        // FIREBASE CONFIG
         const firebaseConfig = {
             apiKey: "AIzaSyDX5zqilc7zamn_XVFcIF_en-prH0VlV3k",
             authDomain: "huy-caro.firebaseapp.com",
@@ -128,46 +119,28 @@
         let db = null; try { db = firebase.database(); } catch(e) {}
 
         // BIẾN GAME
-        let myName="", currentRoomId=null, mySymbol="", isAiMode=false, isMyTurn=false;
+        let myName="", currentRoomId=null, mySymbol="", currentMode=""; // Mode: 'ONLINE', 'OFFLINE', 'AI'
         let boardState = Array(225).fill("");
         let isGameActive = true;
+        let offlineTurn = 'X'; // Dùng riêng cho chế độ Offline
         const SIZE = 15;
 
         // UI FUNCTIONS
         function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
         function goToMenu() { myName = document.getElementById('username').value.trim() || "Người Chơi"; document.getElementById('welcome-msg').innerText = "Xin chào, " + myName; showScreen('screen-menu'); }
-        function resetGame() { if(currentRoomId && !isAiMode && db) db.ref('rooms/'+currentRoomId).off(); currentRoomId = null; isAiMode = false; showScreen('screen-menu'); }
         
-        // LOGIC KHỞI TẠO GAME VỚI AI (RANDOM)
-        function startAI() { 
-            isAiMode=true; 
-            isGameActive=true; 
-            boardState.fill(""); 
-            document.getElementById('btn-restart').style.display='none'; 
-            document.getElementById('room-id-display').innerText = "BOSS MODE";
-            initBoard(); 
-            showScreen('screen-game'); 
-
-            // RANDOM QUYỀN ĐI TRƯỚC (50/50)
-            if (Math.random() < 0.5) {
-                // Bạn đi trước
-                mySymbol = 'X';
-                isMyTurn = true;
-                document.getElementById('status-display').innerText = "Lượt của bạn (X)";
-            } else {
-                // Boss đi trước
-                mySymbol = 'O';
-                isMyTurn = false;
-                document.getElementById('status-display').innerText = "Boss đang đi trước...";
-                // Boss đánh ngay
-                setTimeout(triggerBossTurn, 800);
-            }
-            document.getElementById('my-symbol-display').innerText = mySymbol + " (Đấu với " + (mySymbol==='X'?'O':'X') + ")";
+        function quitGame() { 
+            if(currentRoomId && currentMode === 'ONLINE' && db) db.ref('rooms/'+currentRoomId).off(); 
+            currentRoomId = null; 
+            currentMode = ""; 
+            showScreen('screen-menu'); 
         }
 
-        function restartAiGame() {
-            // Khi chơi lại cũng Random lại từ đầu
-            startAI();
+        // --- HÀM CHƠI LẠI (TẤT CẢ CHẾ ĐỘ) ---
+        function restartCurrentMode() {
+            if (currentMode === 'AI') startAI();
+            else if (currentMode === 'OFFLINE') startOffline();
+            else if (currentMode === 'ONLINE') restartOnline();
         }
 
         function initBoard() {
@@ -185,197 +158,253 @@
             });
         }
 
-        // GAME LOGIC
-        function handleCellClick(i) {
-            if(!isGameActive || !isMyTurn || boardState[i] !== "") return;
-            
-            // Người đi
-            boardState[i] = mySymbol; updateBoardUI();
-            if(checkWin(boardState, mySymbol)) { endGame(mySymbol); return; }
+        // ==========================================
+        // 1. CHẾ ĐỘ OFFLINE (2 NGƯỜI)
+        // ==========================================
+        function startOffline() {
+            currentMode = 'OFFLINE';
+            isGameActive = true;
+            boardState.fill("");
+            offlineTurn = 'X'; // X luôn đi trước
+            document.getElementById('btn-restart').style.display='none';
+            document.getElementById('room-id-display').innerText = "CHẾ ĐỘ OFFLINE";
+            document.getElementById('status-display').innerText = "Lượt của X";
+            document.getElementById('status-display').style.color = "#e94560"; // Màu của X
+            document.getElementById('sub-status').innerText = "2 người chơi trên cùng máy";
+            initBoard();
+            showScreen('screen-game');
+        }
 
-            // AI BOSS LOGIC
-            if(isAiMode) {
-                isMyTurn = false;
-                document.getElementById('status-display').innerText = "Boss đang tính...";
-                setTimeout(triggerBossTurn, 100); 
+        // ==========================================
+        // 2. CHẾ ĐỘ AI BOSS (RANDOM TURN)
+        // ==========================================
+        function startAI() { 
+            currentMode = 'AI';
+            isGameActive = true; 
+            boardState.fill(""); 
+            document.getElementById('btn-restart').style.display='none'; 
+            document.getElementById('room-id-display').innerText = "BOSS MODE";
+            initBoard(); 
+            showScreen('screen-game'); 
+
+            // RANDOM: 50% Bạn là X, 50% Bạn là O
+            if (Math.random() < 0.5) {
+                mySymbol = 'X'; // Bạn đi trước
+                document.getElementById('status-display').innerText = "Lượt của bạn (X)";
+                document.getElementById('status-display').style.color = "#00f260";
+            } else {
+                mySymbol = 'O'; // Boss đi trước (Boss cầm X)
+                document.getElementById('status-display').innerText = "Boss (X) đi trước...";
+                document.getElementById('status-display').style.color = "#e94560";
+                setTimeout(triggerBossTurn, 800); // Boss đánh sau 0.8s
+            }
+            document.getElementById('sub-status').innerText = `Bạn cầm quân ${mySymbol}`;
+        }
+
+        // ==========================================
+        // 3. CHẾ ĐỘ ONLINE (PVP)
+        // ==========================================
+        function createRoom() { if(!db) return alert("Firebase lỗi!"); currentRoomId=Math.floor(10000+Math.random()*90000); mySymbol='X'; currentMode='ONLINE'; isGameActive=true; document.getElementById('btn-restart').style.display='none'; db.ref('rooms/'+currentRoomId).set({playerX:myName, playerO:"...", board:Array(225).fill(""), turn:'X'}); startGameOnline(); }
+        function joinRoom() { if(!db) return alert("Firebase lỗi!"); let id=document.getElementById('room-input').value; db.ref('rooms/'+id).once('value', s=>{ if(s.exists() && s.val().playerO==="...") { currentRoomId=id; mySymbol='O'; currentMode='ONLINE'; isGameActive=true; document.getElementById('btn-restart').style.display='none'; db.ref('rooms/'+id).update({playerO:myName}); startGameOnline(); } else alert("Phòng lỗi!"); }); }
+        
+        function restartOnline() {
+            // Trong online, nút chơi lại sẽ xóa bàn cờ
+            if(db) db.ref('rooms/'+currentRoomId).update({board: Array(225).fill(""), turn: 'X', winner: null});
+            document.getElementById('btn-restart').style.display='none';
+        }
+
+        function startGameOnline() { 
+            initBoard(); showScreen('screen-game'); 
+            document.getElementById('sub-status').innerText = mySymbol + " (Online)";
+            if(db) { 
+                document.getElementById('room-id-display').innerText="Phòng: "+currentRoomId; 
+                db.ref('rooms/'+currentRoomId).on('value', s=>{ 
+                    let d=s.val(); if(!d) return; 
+                    boardState=d.board||Array(225).fill(""); updateBoardUI(); 
+                    
+                    // Logic thắng thua online
+                    if(d.winner) { 
+                        isGameActive = false;
+                        let msg = d.winner===mySymbol ? "BẠN THẮNG!" : "BẠN THUA!";
+                        document.getElementById('status-display').innerText = msg;
+                        document.getElementById('status-display').style.color = d.winner===mySymbol ? "#00f260" : "#e94560";
+                        document.getElementById('btn-restart').style.display='block';
+                    } 
+                    else {
+                        isGameActive = true;
+                        document.getElementById('btn-restart').style.display='none';
+                        if(d.turn===mySymbol) { document.getElementById('status-display').innerText="Lượt bạn!"; document.getElementById('status-display').style.color="#00f260"; } 
+                        else { document.getElementById('status-display').innerText="Đối thủ đang đánh..."; document.getElementById('status-display').style.color="#fff"; } 
+                    }
+                }); 
+            } 
+        }
+
+        // ==========================================
+        // XỬ LÝ CLICK (CHUNG CHO MỌI CHẾ ĐỘ)
+        // ==========================================
+        function handleCellClick(i) {
+            if(!isGameActive || boardState[i] !== "") return;
+
+            // --- XỬ LÝ OFFLINE ---
+            if (currentMode === 'OFFLINE') {
+                boardState[i] = offlineTurn;
+                updateBoardUI();
+                if(checkWin(boardState, offlineTurn)) {
+                    endGame(offlineTurn);
+                } else {
+                    // Đổi lượt Offline
+                    offlineTurn = offlineTurn === 'X' ? 'O' : 'X';
+                    document.getElementById('status-display').innerText = "Lượt của " + offlineTurn;
+                    document.getElementById('status-display').style.color = offlineTurn === 'X' ? "#e94560" : "#4facfe";
+                }
                 return;
             }
 
-            // PVP ONLINE
-            if(db) { const next = mySymbol==='X'?'O':'X'; db.ref('rooms/'+currentRoomId).update({ board: boardState, turn: next }); }
+            // --- XỬ LÝ AI & ONLINE ---
+            // Chỉ đánh được nếu đến lượt mình
+            let isMyTurn = false;
+            if (currentMode === 'ONLINE') {
+                // Check lượt qua Firebase data (đã xử lý trong startGameOnline)
+                // Nhưng ta cần check local để chặn click
+                // (Để đơn giản, ta gửi request, nếu server từ chối thì thôi)
+            } 
+            
+            // Logic local AI
+            if (currentMode === 'AI') {
+                // Nếu mình là X thì turn phải là X (và ngược lại)
+                // Nhưng ở đây ta dùng biến mySymbol
+                // Nếu boardState đếm số quân X và O bằng nhau -> Lượt X. Lệch -> Lượt O
+                let xCount = boardState.filter(k=>k==='X').length;
+                let oCount = boardState.filter(k=>k==='O').length;
+                let currentTurn = xCount === oCount ? 'X' : 'O';
+                if (currentTurn !== mySymbol) return; // Chưa đến lượt
+            }
+
+            // Online Turn Check (Sơ bộ)
+            if (currentMode === 'ONLINE') {
+                 let xCount = boardState.filter(k=>k==='X').length;
+                 let oCount = boardState.filter(k=>k==='O').length;
+                 let currentTurn = xCount === oCount ? 'X' : 'O';
+                 if (currentTurn !== mySymbol) return;
+            }
+
+            // Thực hiện nước đi
+            boardState[i] = mySymbol; 
+            updateBoardUI();
+
+            if(checkWin(boardState, mySymbol)) { 
+                endGame(mySymbol); 
+                return; 
+            }
+
+            // AI RESPONSE
+            if(currentMode === 'AI') {
+                document.getElementById('status-display').innerText = "Boss đang tính...";
+                document.getElementById('status-display').style.color = "#fff";
+                setTimeout(triggerBossTurn, 100); 
+            }
+
+            // ONLINE SYNC
+            if(currentMode === 'ONLINE' && db) { 
+                const next = mySymbol==='X'?'O':'X'; 
+                db.ref('rooms/'+currentRoomId).update({ board: boardState, turn: next }); 
+            }
         }
 
         function triggerBossTurn() {
             if(!isGameActive) return;
-            
-            // Xác định quân của Boss (Ngược lại với người chơi)
-            const bossSymbol = mySymbol === 'X' ? 'O' : 'X';
-
-            // GỌI THUẬT TOÁN BẤT BẠI
-            const aiMove = getGodModeMove(bossSymbol);
+            const bossSymbol = mySymbol === 'X' ? 'O' : 'X'; // Boss cầm quân ngược lại
+            const aiMove = getGodModeMove(bossSymbol); // AI cầm quân Boss
             
             if(aiMove !== -1) {
                 boardState[aiMove] = bossSymbol; 
                 updateBoardUI();
                 if(checkWin(boardState, bossSymbol)) { endGame(bossSymbol); } 
                 else {
-                    isMyTurn = true;
                     document.getElementById('status-display').innerText = `Lượt của bạn (${mySymbol})`;
+                    document.getElementById('status-display').style.color = "#00f260";
                 }
             } else {
-                alert("Hòa cờ!"); isGameActive = false;
-                document.getElementById('btn-restart').style.display = 'block';
+                alert("Hòa cờ!"); endGame('DRAW');
             }
         }
 
         function endGame(winner) {
             isGameActive = false;
-            let msg = winner === mySymbol ? "BẠN ĐÃ THẮNG! (Kỳ tích)" : "BOSS ĐÃ THẮNG! 💀";
-            document.getElementById('status-display').innerText = msg;
-            document.getElementById('status-display').style.color = winner === mySymbol ? "#00f260" : "#e94560";
-            if(isAiMode) document.getElementById('btn-restart').style.display = 'block';
-            if(!isAiMode && db) db.ref('rooms/'+currentRoomId).update({board:boardState, winner:winner});
-        }
+            let msg = "";
+            let color = "#fff";
 
-        // ==========================================
-        // THUẬT TOÁN GOD MODE (MINIMAX)
-        // ==========================================
-        
-        function getGodModeMove(bossSymbol) {
-            const playerSymbol = bossSymbol === 'X' ? 'O' : 'X';
-
-            // 1. Nước đầu tiên luôn đánh giữa nếu trống (Nếu Boss đi trước hoặc người chơi đánh lệch)
-            if(boardState[112] === "") return 112;
-
-            // 2. Lọc các ô ứng viên
-            let candidates = [];
-            for(let i=0; i<225; i++) {
-                if(boardState[i] === "" && hasNeighbor(i)) {
-                    candidates.push(i);
-                }
+            if (currentMode === 'OFFLINE') {
+                msg = winner + " ĐÃ THẮNG!";
+                color = winner === 'X' ? "#e94560" : "#4facfe";
+            } 
+            else if (currentMode === 'AI') {
+                msg = winner === mySymbol ? "BẠN ĐÃ THẮNG!" : "BOSS ĐÃ THẮNG!";
+                color = winner === mySymbol ? "#00f260" : "#e94560";
             }
 
-            // 3. Đánh giá
+            document.getElementById('status-display').innerText = msg;
+            document.getElementById('status-display').style.color = color;
+            document.getElementById('btn-restart').style.display = 'block';
+
+            if(currentMode === 'ONLINE' && db) db.ref('rooms/'+currentRoomId).update({board:boardState, winner:winner});
+        }
+
+        // --- AI LOGIC (MINIMAX SIMPLIFIED) ---
+        function getGodModeMove(bossSym) {
+            const playerSym = bossSym === 'X' ? 'O' : 'X';
+            if(boardState[112] === "") return 112; // Đánh giữa nếu trống
+
+            let candidates = [];
+            for(let i=0; i<225; i++) if(boardState[i] === "" && hasNeighbor(i)) candidates.push(i);
+
             let bestScore = -Infinity;
-            let bestMove = candidates[0];
+            let bestMove = candidates.length > 0 ? candidates[0] : -1;
 
             for(let move of candidates) {
-                boardState[move] = bossSymbol; // Thử đánh
+                boardState[move] = bossSym;
+                let score = evaluateBoard(bossSym);
+                let enemyScore = evaluatePoint(move, playerSym);
                 
-                // Điểm lợi thế của mình
-                let score = evaluateBoard(bossSymbol); 
-                
-                // Điểm nguy hiểm của địch (Nếu mình không đánh đây, địch đánh đây thì sao?)
-                let enemyScore = evaluatePoint(move, playerSymbol); 
-                
-                // Nếu nước này thắng -> CHỐT
-                if(evaluatePoint(move, bossSymbol) >= 100000) {
-                    boardState[move] = ""; return move;
-                }
-                
-                // Nếu địch sắp thắng (4 con hoặc 3 hở) -> PHẢI CHẶN (Ưu tiên cực cao)
-                if(enemyScore >= 10000) score += enemyScore * 15; 
-                
-                boardState[move] = ""; // Hoàn trả
+                if(evaluatePoint(move, bossSym) >= 100000) { boardState[move] = ""; return move; } // Thắng luôn
+                if(enemyScore >= 10000) score += enemyScore * 20; // Chặn thua (ưu tiên cao nhất)
 
-                if(score > bestScore) {
-                    bestScore = score;
-                    bestMove = move;
-                }
+                boardState[move] = "";
+                if(score > bestScore) { bestScore = score; bestMove = move; }
             }
             return bestMove;
         }
 
         function hasNeighbor(idx) {
-            const x = idx % SIZE, y = Math.floor(idx / SIZE);
-            for(let dy=-1; dy<=1; dy++) {
-                for(let dx=-1; dx<=1; dx++) {
-                    if(dx===0 && dy===0) continue;
-                    let nx=x+dx, ny=y+dy;
-                    if(nx>=0 && nx<SIZE && ny>=0 && ny<SIZE) {
-                        if(boardState[ny*SIZE + nx] !== "") return true;
-                    }
-                }
+            const x = idx%SIZE, y = Math.floor(idx/SIZE);
+            for(let dy=-1; dy<=1; dy++) for(let dx=-1; dx<=1; dx++) {
+                if(dx===0 && dy===0) continue;
+                let nx=x+dx, ny=y+dy;
+                if(nx>=0 && nx<SIZE && ny>=0 && ny<SIZE && boardState[ny*SIZE+nx]!=="") return true;
             }
             return false;
         }
-
-        function evaluateBoard(player) {
-            let score = 0;
-            for(let i=0; i<225; i++) {
-                if(boardState[i] === player) score += evaluatePoint(i, player);
-            }
-            return score;
-        }
-
+        function evaluateBoard(p) { let s=0; for(let i=0; i<225; i++) if(boardState[i]===p) s+=evaluatePoint(i, p); return s; }
         function evaluatePoint(idx, p) {
-            const x = idx % SIZE, y = Math.floor(idx / SIZE);
-            let totalScore = 0;
-            const dirs = [[1,0], [0,1], [1,1], [1,-1]];
-            
+            const x=idx%SIZE, y=Math.floor(idx/SIZE); let total=0; const dirs=[[1,0],[0,1],[1,1],[1,-1]];
             for(let d of dirs) {
-                let count = 1, block = 0;
-                // Xuôi
-                for(let k=1; k<5; k++) {
-                    let nx=x+d[0]*k, ny=y+d[1]*k;
-                    if(nx<0||nx>=SIZE||ny<0||ny>=SIZE) { block++; break; }
-                    let val = boardState[ny*SIZE+nx];
-                    if(val === p) count++;
-                    else if(val !== "") { block++; break; }
-                    else break;
-                }
-                // Ngược
-                for(let k=1; k<5; k++) {
-                    let nx=x-d[0]*k, ny=y-d[1]*k;
-                    if(nx<0||nx>=SIZE||ny<0||ny>=SIZE) { block++; break; }
-                    let val = boardState[ny*SIZE+nx];
-                    if(val === p) count++;
-                    else if(val !== "") { block++; break; }
-                    else break;
-                }
-                
-                if(count >= 5) totalScore += 1000000;
-                else if(count === 4) totalScore += (block===0 ? 100000 : (block===1 ? 5000 : 0));
-                else if(count === 3) totalScore += (block===0 ? 5000 : (block===1 ? 100 : 0));
-                else if(count === 2) totalScore += (block===0 ? 100 : 0);
+                let count=1, block=0;
+                for(let k=1; k<5; k++) { let nx=x+d[0]*k, ny=y+d[1]*k; if(nx<0||nx>=SIZE||ny<0||ny>=SIZE){block++;break;} if(boardState[ny*SIZE+nx]===p)count++; else if(boardState[ny*SIZE+nx]!==""){block++;break;} else break; }
+                for(let k=1; k<5; k++) { let nx=x-d[0]*k, ny=y-d[1]*k; if(nx<0||nx>=SIZE||ny<0||ny>=SIZE){block++;break;} if(boardState[ny*SIZE+nx]===p)count++; else if(boardState[ny*SIZE+nx]!==""){block++;break;} else break; }
+                if(count>=5) total+=1000000; else if(count===4) total+=(block===0?100000:(block===1?5000:0)); else if(count===3) total+=(block===0?5000:(block===1?100:0)); else if(count===2) total+=(block===0?100:0);
             }
-            return totalScore;
+            return total;
         }
-
         function checkWin(b, p) {
-            for(let i=0; i<SIZE; i++) {
-                for(let j=0; j<SIZE; j++) {
-                    let idx = i*SIZE+j; if(b[idx]!==p) continue;
-                    if(j+4<SIZE && b[idx+1]===p && b[idx+2]===p && b[idx+3]===p && b[idx+4]===p) return true;
-                    if(i+4<SIZE && b[idx+15]===p && b[idx+30]===p && b[idx+45]===p && b[idx+60]===p) return true;
-                    if(i+4<SIZE && j+4<SIZE && b[idx+16]===p && b[idx+32]===p && b[idx+48]===p && b[idx+64]===p) return true;
-                    if(i+4<SIZE && j-4>=0 && b[idx+14]===p && b[idx+28]===p && b[idx+42]===p && b[idx+56]===p) return true;
-                }
+            for(let i=0; i<SIZE; i++) for(let j=0; j<SIZE; j++) {
+                let idx=i*SIZE+j; if(b[idx]!==p) continue;
+                if(j+4<SIZE && b[idx+1]===p && b[idx+2]===p && b[idx+3]===p && b[idx+4]===p) return true;
+                if(i+4<SIZE && b[idx+15]===p && b[idx+30]===p && b[idx+45]===p && b[idx+60]===p) return true;
+                if(i+4<SIZE && j+4<SIZE && b[idx+16]===p && b[idx+32]===p && b[idx+48]===p && b[idx+64]===p) return true;
+                if(i+4<SIZE && j-4>=0 && b[idx+14]===p && b[idx+28]===p && b[idx+42]===p && b[idx+56]===p) return true;
             }
             return false;
-        }
-
-        // ROOM LOGIC
-        function createRoom() { if(!db) return alert("Firebase lỗi!"); currentRoomId=Math.floor(10000+Math.random()*90000); mySymbol='X'; isAiMode=false; isGameActive=true; document.getElementById('btn-restart').style.display='none'; db.ref('rooms/'+currentRoomId).set({playerX:myName, playerO:"...", board:Array(225).fill(""), turn:'X'}); startGame(); }
-        function joinRoom() { if(!db) return alert("Firebase lỗi!"); let id=document.getElementById('room-input').value; db.ref('rooms/'+id).once('value', s=>{ if(s.exists() && s.val().playerO==="...") { currentRoomId=id; mySymbol='O'; isAiMode=false; isGameActive=true; document.getElementById('btn-restart').style.display='none'; db.ref('rooms/'+id).update({playerO:myName}); startGame(); } else alert("Phòng lỗi!"); }); }
-        
-        function startGame() { 
-            initBoard(); 
-            showScreen('screen-game'); 
-            isMyTurn=(mySymbol==='X'); 
-            document.getElementById('status-display').innerText = isMyTurn?"Lượt bạn ("+mySymbol+")":"Đợi..."; 
-            document.getElementById('my-symbol-display').innerText = mySymbol + " (Online)";
-
-            if(!isAiMode && db) { 
-                document.getElementById('room-id-display').innerText="Phòng: "+currentRoomId; 
-                db.ref('rooms/'+currentRoomId).on('value', s=>{ 
-                    let d=s.val(); if(!d) return; 
-                    boardState=d.board||Array(225).fill(""); updateBoardUI(); 
-                    if(d.winner) { endGame(d.winner); } 
-                    else if(d.turn===mySymbol) { isMyTurn=true; document.getElementById('status-display').innerText="Lượt bạn!"; } 
-                    else { isMyTurn=false; document.getElementById('status-display').innerText="Đối thủ đang đánh..."; } 
-                }); 
-            } 
         }
     </script>
 </body>
